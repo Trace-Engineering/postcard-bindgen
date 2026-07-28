@@ -1,6 +1,8 @@
-use std::{collections::HashMap, io::Write, num::NonZero, ops::Range, str::FromStr, u8};
+use std::{collections::HashMap, io::Write, num::NonZero, ops::Range, str::FromStr};
 
-use postcard_bindgen::{generate_bindings, javascript, python, PackageInfo, PostcardBindings};
+use postcard_bindgen::{
+    dart, generate_bindings, javascript, python, PackageInfo, PostcardBindings,
+};
 use serde::Serialize;
 
 #[derive(Debug, Serialize, PostcardBindings)]
@@ -152,6 +154,30 @@ fn main() {
         python::GenerationSettings::enable_all()
             .runtime_type_checks(true)
             .module_structure(true),
+        generate_bindings!(
+            UnionContainer,
+            StructContainer,
+            EnumContainer,
+            TupleContainer,
+            ContainerTypes,
+            PrimitiveTypes,
+            CompoundTypes,
+            AllocTypes,
+            HeaplessTypes,
+            AllTests,
+            e::E,
+            e::f::F
+        ),
+    )
+    .unwrap();
+
+    dart::build_package(
+        std::env::current_dir().unwrap().as_path(),
+        PackageInfo {
+            name: "dart_test_bindings".into(),
+            version: "0.1.0".try_into().unwrap(),
+        },
+        dart::GenerationSettings::enable_all(),
         generate_bindings!(
             UnionContainer,
             StructContainer,

@@ -13,6 +13,7 @@ Structs and enums can be annotated with `PostcardBindings` to generate code. The
 
 * 🌐 **JavaScript** (>= ES2021)
 * 🐍 **Python** (>= 3.9)
+* 🎯 **Dart / Flutter**
 
 ## Usage
 
@@ -63,6 +64,38 @@ const test = {
 
 const bytes = serialize("Test", test)
 ```
+
+### Dart / Flutter
+
+Generate a Dart package with the same registry used by the other targets:
+
+```rust
+dart::build_package(
+    std::env::current_dir().unwrap().as_path(),
+    PackageInfo {
+        name: "device_protocol".into(),
+        version: "0.1.0".try_into().unwrap(),
+    },
+    dart::GenerationSettings::enable_all(),
+    generate_bindings!(Test),
+)
+.unwrap();
+```
+
+Then add the generated directory as a path dependency in the Flutter app and use
+the typed model and `Uint8List` codec:
+
+```dart
+import 'package:device_protocol/device_protocol.dart';
+
+final bytes = serialize(const Test(name: 1, other: 23));
+final value = deserialize<Test>(bytes);
+```
+
+Rust integers up to 32 bits map to Dart `int`; 64- and 128-bit integers map to
+`BigInt` to avoid loss of precision. Arrays map to `List`, maps to `Map`,
+options to nullable types, tuples to Dart records, and Rust enums to sealed
+class hierarchies.
 
 ## Type mappings
 

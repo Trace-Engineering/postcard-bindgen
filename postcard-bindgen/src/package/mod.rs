@@ -1,3 +1,4 @@
+pub mod dart_package;
 pub mod npm_package;
 pub mod pip_module;
 

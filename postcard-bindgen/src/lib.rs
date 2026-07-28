@@ -1,7 +1,7 @@
 //! # Postcard Bindgen
 //!
-//! This crate allows automatically generating javascript bindings to
-//! serialize javascript objects to postcard format and vice versa.
+//! This crate automatically generates JavaScript, Python, and Dart/Flutter
+//! bindings that serialize values to postcard format and back.
 //!
 //! # Example
 //!
@@ -80,6 +80,14 @@ pub mod javascript {
 pub mod python {
     pub use super::package::pip_module::build_pip_module as build_package;
     pub use postcard_bindgen_core::code_gen::python::GenerationSettings;
+}
+
+/// Generate dependency-free bindings for Dart and Flutter.
+#[cfg(feature = "generating")]
+#[cfg_attr(docsrs, doc(cfg(feature = "generating")))]
+pub mod dart {
+    pub use super::package::dart_package::build_dart_package as build_package;
+    pub use postcard_bindgen_core::code_gen::dart::GenerationSettings;
 }
 
 #[cfg(feature = "generating")]
