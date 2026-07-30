@@ -1,6 +1,4 @@
-use core::ops::Deref;
-
-use convert_case::{Case, Casing};
+use convert_case::{Boundary, Case, Converter};
 use genco::{
     lang::Lang,
     quote,
@@ -14,7 +12,11 @@ use crate::{
     type_info::ObjectMeta,
 };
 
-pub fn wrap_with_braces_if_multi_line<L: Lang>(tokens: impl FormatInto<L>) -> Tokens<L> {
+pub fn wrap_with_braces_if_multi_line<L>(tokens: impl FormatInto<L>) -> Tokens<L>
+where
+    L: Lang,
+    L::Item: PartialEq,
+{
     let tokens = quote!($tokens);
     if tokens.is_empty() {
         return Tokens::new();
@@ -26,7 +28,7 @@ pub fn wrap_with_braces_if_multi_line<L: Lang>(tokens: impl FormatInto<L>) -> To
     // and wrap it in curly braces.
     if tokens
         .iter()
-        .map(|t| matches!(t, Item::Push))
+        .map(|t| t == &Item::<L>::push())
         .filter(|v| *v)
         .count()
         > 1
@@ -45,14 +47,18 @@ pub fn wrap_with_braces_if_multi_line<L: Lang>(tokens: impl FormatInto<L>) -> To
     result
 }
 
-pub fn break_long_logical_lines<L: Lang>(tokens: impl FormatInto<L>) -> Tokens<L> {
+pub fn break_long_logical_lines<L>(tokens: impl FormatInto<L>) -> Tokens<L>
+where
+    L: Lang,
+    L::Item: PartialEq,
+{
     let tokens = quote!($tokens);
     let mut result = Tokens::new();
     let mut intend = false;
 
     for token in tokens {
         let is_logical_operator =
-            matches!(&token, Item::Literal(l) if ["&&", "||"].contains(&l.deref()));
+            token == Item::<L>::static_("&&") || token == Item::<L>::static_("||");
         result.append(token);
         if is_logical_operator {
             result.push();
@@ -73,8 +79,20 @@ pub trait StrExt {
 
 impl StrExt for &str {
     fn to_obj_identifier(&self) -> String {
-        self.to_case(Case::Snake).to_uppercase()
+        snake_case(self).to_uppercase()
     }
+}
+
+pub(crate) fn snake_case(value: &str) -> String {
+    Converter::new()
+        .set_boundaries(&[
+            Boundary::Hyphen,
+            Boundary::LowerUpper,
+            Boundary::Space,
+            Boundary::Underscore,
+        ])
+        .to_case(Case::Snake)
+        .convert(value)
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -315,6 +333,14 @@ mod test {
     use genco::lang::JavaScript;
 
     use super::*;
+
+    #[test]
+    fn snake_case_only_splits_hyphens_and_lower_upper_transitions() {
+        assert_eq!(
+            snake_case("BadJalpi2-fw-i2c-postcardBindgen"),
+            "bad_jalpi2_fw_i2c_postcard_bindgen"
+        );
+    }
 
     #[test]
     fn test_container_identifier_builder() {
